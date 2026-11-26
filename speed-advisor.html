@@ -1,0 +1,634 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Speed Advisor</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    color: white;
+    background:
+        radial-gradient(circle at 15% 15%, #263b83 0%, transparent 35%),
+        radial-gradient(circle at 85% 80%, #552b83 0%, transparent 35%),
+        linear-gradient(135deg, #080d20, #111b38, #101329);
+    padding: 25px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.logo {
+    font-size: 25px;
+    font-weight: 800;
+    color: #55eaff;
+}
+
+.status {
+    padding: 10px 16px;
+    border: 1px solid #ffffff30;
+    background: #ffffff12;
+    border-radius: 20px;
+    color: #80ffbd;
+    font-size: 13px;
+}
+
+.container {
+    max-width: 1250px;
+    margin: auto;
+}
+
+h1 {
+    font-size: clamp(27px, 4vw, 42px);
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #aab8d8;
+    margin-bottom: 25px;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background: #ffffff0d;
+    border: 1px solid #ffffff20;
+    border-radius: 20px;
+    padding: 23px;
+    backdrop-filter: blur(18px);
+    box-shadow: 0 12px 35px #00000025;
+}
+
+.card h2 {
+    font-size: 19px;
+    margin-bottom: 18px;
+    color: #8beeff;
+}
+
+.direction-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.direction-buttons button {
+    padding: 13px 5px;
+    color: white;
+    background: #ffffff12;
+    border: 1px solid #ffffff25;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.direction-buttons button.active {
+    background: #087eae;
+    border-color: #55eaff;
+    box-shadow: 0 0 15px #00cfff55;
+}
+
+.metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    padding: 15px;
+    background: #ffffff0b;
+    border-radius: 13px;
+}
+
+.metric span:first-child {
+    color: #b7c5df;
+}
+
+.metric strong {
+    font-size: 21px;
+    color: #55eaff;
+    text-align: right;
+}
+
+.distance-display {
+    text-align: center;
+    padding: 20px 10px;
+}
+
+.distance-number {
+    font-size: clamp(48px, 8vw, 70px);
+    font-weight: 800;
+    color: #55eaff;
+    text-shadow: 0 0 25px #00d9ff55;
+}
+
+.distance-unit {
+    color: #aab8d8;
+    font-size: 16px;
+}
+
+.distance-caption {
+    color: #c3cde4;
+    margin-top: 8px;
+}
+
+input[type="range"] {
+    width: 100%;
+    accent-color: #42dfff;
+    margin: 20px 0;
+    cursor: pointer;
+}
+
+.speed-value {
+    font-size: 36px;
+    font-weight: bold;
+    color: #55eaff;
+}
+
+.advice {
+    margin-top: 15px;
+    padding: 16px;
+    border-radius: 13px;
+    background: #ffffff10;
+    border-left: 4px solid #55eaff;
+    line-height: 1.6;
+}
+
+.signal {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.signal-light {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #777;
+    box-shadow: 0 0 10px #777;
+}
+
+.signal-light.green {
+    background: #20f58a;
+    box-shadow: 0 0 15px #20f58a;
+}
+
+.signal-light.yellow {
+    background: #ffd43b;
+    box-shadow: 0 0 15px #ffd43b;
+}
+
+.signal-light.red {
+    background: #ff405a;
+    box-shadow: 0 0 15px #ff405a;
+}
+
+.alert {
+    display: none;
+    margin-top: 15px;
+    padding: 16px;
+    border-radius: 13px;
+    background: #ff244033;
+    border: 1px solid #ff526d;
+    color: #ffb3bd;
+    line-height: 1.6;
+}
+
+.alert.show {
+    display: block;
+}
+
+button.voice-button {
+    margin-top: 15px;
+    padding: 12px 18px;
+    background: linear-gradient(120deg, #087eae, #6945ba);
+    color: white;
+    border: none;
+    border-radius: 11px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+footer {
+    text-align: center;
+    color: #8190b3;
+    margin-top: 25px;
+    font-size: 12px;
+}
+
+@media(max-width: 750px) {
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    body {
+        padding: 15px;
+    }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+    <div class="logo">⚡ SMART SPEED ADVISOR</div>
+    <div class="status" id="connectionStatus">● Waiting for traffic system</div>
+</header>
+
+<h1>Intelligent Speed Monitoring</h1>
+<p class="subtitle">Monitor your speed, signal distance and traffic alerts.</p>
+
+<div class="dashboard">
+
+    <section class="card">
+        <h2>🧭 Select Your Direction</h2>
+
+        <div class="direction-buttons">
+            <button class="active" data-direction="North">NORTH</button>
+            <button data-direction="South">SOUTH</button>
+            <button data-direction="West">WEST</button>
+            <button data-direction="East">EAST</button>
+        </div>
+
+        <div class="metric">
+            <span>Selected direction</span>
+            <strong id="direction">North</strong>
+        </div>
+
+        <div class="metric">
+            <span>Traffic signal</span>
+            <div class="signal">
+                <div class="signal-light" id="signalLight"></div>
+                <strong id="signalStatus">Waiting</strong>
+            </div>
+        </div>
+
+        <div class="metric">
+            <span>Traffic system</span>
+            <strong id="systemStatus">Connecting</strong>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>📍 Distance From Signal</h2>
+
+        <div class="distance-display">
+            <div class="distance-number" id="distance">---</div>
+            <div class="distance-unit">METRES</div>
+            <div class="distance-caption" id="distanceCaption">
+                Waiting for distance data
+            </div>
+        </div>
+
+        <div class="advice" id="distanceAdvice">
+            Distance information will appear when the traffic system sends an update.
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>🚗 Speed Monitoring</h2>
+
+        <div class="speed-value">
+            <span id="speedValue">30</span> km/h
+        </div>
+
+        <input type="range" id="speedSlider"
+               min="0" max="100" value="30">
+
+        <div class="metric">
+            <span>Recommended speed</span>
+            <strong id="recommendedSpeed">40 km/h</strong>
+        </div>
+
+        <div class="advice" id="speedAdvice">
+            Maintain a safe speed and follow the traffic signal.
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>🚑 Emergency Monitoring</h2>
+
+        <div class="metric">
+            <span>Ambulance status</span>
+            <strong id="ambulanceStatus">No emergency</strong>
+        </div>
+
+        <div class="metric">
+            <span>Ambulance distance</span>
+            <strong id="ambulanceDistance">---</strong>
+        </div>
+
+        <div class="alert" id="ambulanceAlert">
+            🚨 Emergency vehicle approaching. Give priority to the ambulance.
+        </div>
+    </section>
+
+</div>
+
+<button class="voice-button" id="voiceButton">
+    🔊 Enable Voice Announcements
+</button>
+
+<footer>
+    Smart Traffic Management Project | Educational Simulation
+    <br>
+    Speed and distance values are simulated, not measured by real vehicle sensors.
+</footer>
+
+</div>
+
+<script>
+const channel = new BroadcastChannel("smart-traffic-system");
+
+let selectedDirection = "North";
+let receivedData = false;
+let latestSignals = {};
+let ambulanceActive = false;
+let ambulanceDistance = null;
+let lastDistance = null;
+let lastVoiceMessage = "";
+let lastSpeedAdvice = "";
+
+const directionButtons = document.querySelectorAll(
+    ".direction-buttons button"
+);
+
+const speedSlider = document.getElementById("speedSlider");
+
+function speak(message) {
+    if (!("speechSynthesis" in window)) return;
+
+    if (message === lastVoiceMessage) return;
+
+    lastVoiceMessage = message;
+
+    speechSynthesis.cancel();
+
+    const speech = new SpeechSynthesisUtterance(message);
+    speech.rate = 0.95;
+    speech.pitch = 1;
+    speech.volume = 1;
+
+    speechSynthesis.speak(speech);
+}
+
+document.getElementById("voiceButton").addEventListener("click", () => {
+    lastVoiceMessage = "";
+    speak("Voice announcements enabled. Smart Speed Advisor is ready.");
+});
+
+directionButtons.forEach(button => {
+    button.addEventListener("click", () => {
+        directionButtons.forEach(b => b.classList.remove("active"));
+        button.classList.add("active");
+
+        selectedDirection = button.dataset.direction;
+
+        document.getElementById("direction").textContent =
+            selectedDirection;
+
+        lastDistance = null;
+        updateDashboard();
+    });
+});
+
+speedSlider.addEventListener("input", () => {
+    document.getElementById("speedValue").textContent =
+        speedSlider.value;
+
+    updateSpeedAdvice();
+});
+
+function getSignalState() {
+    const key = selectedDirection.toLowerCase();
+
+    return latestSignals[key] || "unknown";
+}
+
+function updateSignal() {
+    const state = getSignalState().toLowerCase();
+
+    const light = document.getElementById("signalLight");
+    const status = document.getElementById("signalStatus");
+
+    light.className = "signal-light";
+
+    if (state === "green") {
+        light.classList.add("green");
+        status.textContent = "GREEN";
+    } else if (state === "yellow") {
+        light.classList.add("yellow");
+        status.textContent = "YELLOW";
+    } else if (state === "red") {
+        light.classList.add("red");
+        status.textContent = "RED";
+    } else {
+        status.textContent = "Waiting";
+    }
+}
+
+function updateDistance() {
+    const distanceElement = document.getElementById("distance");
+    const caption = document.getElementById("distanceCaption");
+    const advice = document.getElementById("distanceAdvice");
+
+    const distance = receivedData ? currentDistance : null;
+
+    if (distance === null || distance === undefined ||
+        !Number.isFinite(Number(distance))) {
+        distanceElement.textContent = "---";
+        caption.textContent = "Waiting for distance data";
+        advice.textContent =
+            "Open the main traffic simulation and wait for distance updates.";
+        return;
+    }
+
+    const metres = Math.max(0, Math.round(Number(distance)));
+
+    distanceElement.textContent = metres;
+    caption.textContent = "Distance to traffic signal";
+
+    if (metres <= 10) {
+        advice.textContent =
+            "You are very close to the signal. Slow down and prepare to stop if required.";
+        advice.style.borderLeftColor = "#ff405a";
+
+        if (lastDistance === null || lastDistance > 10) {
+            speak("You are very close to the traffic signal. Slow down.");
+        }
+    } else if (metres <= 30) {
+        advice.textContent =
+            "You are approaching the signal. Reduce your speed and remain alert.";
+        advice.style.borderLeftColor = "#ffd43b";
+
+        if (lastDistance === null || lastDistance > 30) {
+            speak("You are approaching the traffic signal. Reduce your speed.");
+        }
+    } else {
+        advice.textContent =
+            "You have enough distance to approach the signal carefully. Maintain a safe speed.";
+        advice.style.borderLeftColor = "#55eaff";
+    }
+
+    lastDistance = metres;
+}
+
+function updateSpeedAdvice() {
+    const speed = Number(speedSlider.value);
+    const distance = currentDistance;
+    const signal = getSignalState().toLowerCase();
+
+    let recommended = 40;
+    let message = "Maintain a safe speed and follow the traffic signal.";
+
+    if (distance !== null && distance !== undefined) {
+        if (distance <= 30) {
+            recommended = 20;
+            message = "You are close to the signal. Reduce your speed to 20 km/h or less.";
+        } else if (distance <= 75) {
+            recommended = 30;
+            message = "You are approaching the signal. Reduce your speed to around 30 km/h.";
+        } else {
+            recommended = 40;
+            message = "Maintain a controlled speed of around 40 km/h.";
+        }
+    }
+
+    if (signal === "red") {
+        recommended = 0;
+        message = "The signal is RED. Slow down and stop safely at the stop line.";
+    } else if (signal === "yellow") {
+        recommended = 20;
+        message = "The signal is YELLOW. Slow down and prepare to stop safely.";
+    }
+
+    document.getElementById("recommendedSpeed").textContent =
+        recommended + " km/h";
+
+    const advice = document.getElementById("speedAdvice");
+    advice.textContent = message;
+
+    advice.style.borderLeftColor =
+        speed > recommended ? "#ff405a" : "#20f58a";
+
+    if (speed > recommended && signal !== "green") {
+        if (lastSpeedAdvice !== "slow") {
+            speak("Your speed is too high for the current signal. Please reduce your speed.");
+            lastSpeedAdvice = "slow";
+        }
+    } else {
+        lastSpeedAdvice = "";
+    }
+}
+
+function updateAmbulance() {
+    const alert = document.getElementById("ambulanceAlert");
+
+    if (ambulanceActive) {
+        document.getElementById("ambulanceStatus").textContent =
+            "EMERGENCY ACTIVE";
+
+        document.getElementById("ambulanceDistance").textContent =
+            ambulanceDistance !== null ? ambulanceDistance + " m" : "Approaching";
+
+        alert.classList.add("show");
+    } else {
+        document.getElementById("ambulanceStatus").textContent =
+            "No emergency";
+
+        document.getElementById("ambulanceDistance").textContent = "---";
+
+        alert.classList.remove("show");
+    }
+}
+
+let currentDistance = null;
+
+function updateDashboard() {
+    updateSignal();
+    updateDistance();
+    updateSpeedAdvice();
+    updateAmbulance();
+}
+
+channel.onmessage = (event) => {
+    const data = event.data || {};
+
+    if (data.signals) {
+        latestSignals = data.signals;
+    }
+
+    if (data.direction) {
+        // Keep the user's selected direction unless it is the first update.
+        if (!receivedData) {
+            selectedDirection = data.direction;
+            directionButtons.forEach(button => {
+                button.classList.toggle(
+                    "active",
+                    button.dataset.direction === selectedDirection
+                );
+            });
+            document.getElementById("direction").textContent =
+                selectedDirection;
+        }
+    }
+
+    if (data.distance !== undefined && data.distance !== null) {
+        currentDistance = Number(data.distance);
+    }
+
+    if (data.distance === null) {
+        currentDistance = null;
+    }
+
+    if (data.ambulance !== undefined) {
+        ambulanceActive = Boolean(data.ambulance);
+
+        if (ambulanceActive) {
+            ambulanceDistance =
+                data.distance !== undefined ? data.distance : null;
+        } else {
+            ambulanceDistance = null;
+        }
+    }
+
+    receivedData = true;
+
+    document.getElementById("connectionStatus").textContent =
+        "● Traffic system connected";
+
+    document.getElementById("connectionStatus").style.color = "#80ffbd";
+
+    document.getElementById("systemStatus").textContent = "Connected";
+
+    updateDashboard();
+};
+
+// Ask the main traffic page to send its current state.
+channel.postMessage({ requestState: true });
+
+updateDashboard();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1122 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Traffic Signal System</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  color:white;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse at 10% 10%,#49317e,transparent 42%),
+    radial-gradient(ellipse at 90% 90%,#075b83,transparent 45%),
+    linear-gradient(135deg,#090d25,#171331,#071d36);
+}
+
+.app{
+  display:grid;
+  grid-template-columns:270px 1fr;
+  width:100vw;
+  height:100vh;
+}
+
+.panel{
+  background:rgba(19,25,53,.86);
+  backdrop-filter:blur(18px);
+  padding:17px;
+  overflow-y:auto;
+  border-right:1px solid #ffffff30;
+  z-index:5;
+}
+
+h1{
+  font-size:22px;
+  margin:0 0 7px;
+  color:#65d6ff;
+}
+
+.subtitle{
+  font-size:12px;
+  color:#b9c9d1;
+  margin-bottom:18px;
+}
+
+.section{
+  background:rgba(255,255,255,.075);
+  border:1px solid #ffffff20;
+  padding:13px;
+  border-radius:13px;
+  margin:12px 0;
+  box-shadow:0 8px 22px #00000020;
+}
+
+.section h3{
+  font-size:14px;
+  margin:0 0 10px;
+  color:#9ee7ff;
+}
+
+button{
+  border:1px solid #ffffff25;
+  border-radius:9px;
+  padding:10px;
+  margin:4px 0;
+  width:100%;
+  background:linear-gradient(120deg,#2869bd,#7952b9);
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+  transition:.2s;
+}
+
+button:hover{
+  filter:brightness(1.2);
+  transform:translateY(-1px);
+  box-shadow:0 0 13px #688aff66;
+}
+
+button.stop{background:#b43d55}
+button.green{background:#16885c}
+button.grey{background:#53637e}
+
+.status{
+  font-size:13px;
+  line-height:1.9;
+}
+
+.status strong{color:#8ce6ff}
+
+.keygrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+
+.keygrid button{margin:0}
+
+.legend{
+  font-size:12px;
+  line-height:1.9;
+  color:#d7e2e7;
+}
+
+.distance-card{
+  background:rgba(16,43,58,.8);
+  border:2px solid #38c9ff;
+  border-radius:12px;
+  padding:15px 8px;
+  margin-top:12px;
+  text-align:center;
+  box-shadow:0 0 12px #38c9ff22;
+}
+
+.distance-heading{
+  font-size:12px;
+  color:#9ee7ff;
+  font-weight:bold;
+}
+
+.distance-value{
+  font-size:30px;
+  font-weight:bold;
+  color:#ffe45c;
+  margin:10px 0;
+  text-shadow:0 0 10px #ffe45c66;
+}
+
+.distance-note{
+  font-size:11px;
+  color:#c5dce6;
+}
+
+.distance-card.active{
+  border-color:#ffce45;
+  box-shadow:0 0 15px #ffce4566;
+}
+
+.message{
+  font-size:12px;
+  color:#ccebf5;
+  min-height:38px;
+  line-height:1.5;
+}
+
+.stage{
+  position:relative;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  background:#e8e8e2;
+  overflow:hidden;
+}
+
+.road-svg{
+  position:absolute;
+  width:100%;
+  height:100%;
+  inset:0;
+}
+
+.vehicle-layer{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+
+.vehicle{
+  position:absolute;
+  width:25px;
+  height:43px;
+  border-radius:7px 7px 5px 5px;
+  border:2px solid #20252a;
+  background:#e8b832;
+  box-shadow:0 2px 4px #1118;
+  transform-origin:center;
+  z-index:3;
+}
+
+.vehicle:before{
+  content:"";
+  position:absolute;
+  left:4px;
+  right:4px;
+  top:8px;
+  height:12px;
+  background:#9fd0df;
+  border:1px solid #34434b;
+  border-radius:3px;
+}
+
+.vehicle:after{
+  content:"";
+  position:absolute;
+  left:4px;
+  right:4px;
+  bottom:5px;
+  height:7px;
+  background:#b5dce7;
+  border-radius:2px;
+}
+
+.vehicle .wheel{
+  position:absolute;
+  width:4px;
+  height:9px;
+  background:#16191c;
+  border-radius:2px;
+  top:9px;
+}
+
+.vehicle .w1{left:-4px}
+.vehicle .w2{right:-4px}
+.vehicle .w3{left:-4px;bottom:7px;top:auto}
+.vehicle .w4{right:-4px;bottom:7px;top:auto}
+
+.vehicle.lorry{
+  width:29px;
+  height:55px;
+  background:#5796bb;
+}
+
+.vehicle.lorry:before{height:13px}
+.vehicle.lorry:after{
+  height:24px;
+  background:#d7e1e4;
+}
+
+.vehicle.bus{
+  width:29px;
+  height:58px;
+  background:#e0a33d;
+}
+
+.vehicle.bus:before{height:20px}
+.vehicle.bus:after{
+  height:14px;
+  background:#b5dce7;
+}
+
+.vehicle.bike{
+  width:13px;
+  height:30px;
+  border-radius:8px;
+  background:#d84c46;
+}
+
+.vehicle.bike:before{
+  left:2px;
+  right:2px;
+  top:7px;
+  height:8px;
+}
+
+.vehicle.bike:after{display:none}
+
+.vehicle.cycle{
+  width:11px;
+  height:26px;
+  border:3px dotted #e9e9e9;
+  border-radius:50%;
+  background:#3caa74;
+}
+
+.vehicle.cycle:before,
+.vehicle.cycle:after{display:none}
+
+.vehicle.ambulance{
+  width:30px;
+  height:54px;
+  background:#f5f5f5;
+  border:3px solid #d83232;
+  z-index:10;
+}
+
+.vehicle.ambulance:before{background:#bde5ef}
+
+.vehicle.ambulance:after{
+  content:"+";
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#d83232;
+  font-size:21px;
+  font-weight:bold;
+  background:transparent;
+  bottom:0;
+  height:22px;
+}
+
+.vehicle.n{transform:rotate(180deg)}
+.vehicle.s{transform:rotate(0deg)}
+.vehicle.w{transform:rotate(90deg)}
+.vehicle.e{transform:rotate(-90deg)}
+
+.signal{
+  position:absolute;
+  width:19px;
+  height:54px;
+  background:#20252a;
+  border:2px solid #444;
+  border-radius:8px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-around;
+  align-items:center;
+  padding:3px;
+  z-index:4;
+}
+
+.light{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#555;
+}
+
+.light.red.on{
+  background:#ff3030;
+  box-shadow:0 0 8px #f00;
+}
+
+.light.yellow.on{
+  background:#ffdf28;
+  box-shadow:0 0 8px #ff0;
+}
+
+.light.green.on{
+  background:#22e66a;
+  box-shadow:0 0 8px #0f0;
+}
+
+.sig-n{left:57%;top:35%}
+.sig-s{left:41%;top:61%}
+.sig-w{left:35%;top:57%;transform:rotate(90deg)}
+.sig-e{left:61%;top:41%;transform:rotate(90deg)}
+
+.road-label{
+  position:absolute;
+  color:#fff;
+  background:#263238cc;
+  border-radius:5px;
+  padding:4px 7px;
+  font-size:11px;
+  font-weight:bold;
+  z-index:4;
+}
+
+.label-n{top:3%;left:54%}
+.label-s{bottom:3%;left:42%}
+.label-w{left:2%;top:54%}
+.label-e{right:2%;top:42%}
+
+.freeleft{
+  position:absolute;
+  color:#fff;
+  font-size:12px;
+  font-weight:bold;
+  background:#16864b;
+  border-radius:5px;
+  padding:4px 6px;
+  z-index:4;
+}
+
+.fl-n{top:34%;left:28%}
+.fl-s{bottom:34%;right:28%}
+.fl-w{top:28%;left:34%}
+.fl-e{bottom:28%;right:34%}
+
+@keyframes moveN{
+  to{transform:translateY(115vh) rotate(180deg)}
+}
+@keyframes moveS{
+  to{transform:translateY(-115vh)}
+}
+@keyframes moveW{
+  to{transform:translateX(115vw) rotate(90deg)}
+}
+@keyframes moveE{
+  to{transform:translateX(-115vw) rotate(-90deg)}
+}
+
+.moving.n{animation:moveN 5s linear forwards}
+.moving.s{animation:moveS 5s linear forwards}
+.moving.w{animation:moveW 5s linear forwards}
+.moving.e{animation:moveE 5s linear forwards}
+
+@media(max-width:700px){
+  .app{grid-template-columns:190px 1fr}
+  .panel{padding:10px}
+  h1{font-size:17px}
+  .section{padding:9px}
+  .distance-value{font-size:23px}
+  .vehicle{width:19px;height:34px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<aside class="panel">
+
+  <h1>SMART SIGNAL</h1>
+  <div class="subtitle">
+    Four-Way Traffic Management Simulation
+  </div>
+
+  <div class="section">
+    <h3>TRAFFIC STATUS</h3>
+    <div class="status">
+      Current green:
+      <strong id="greenName">North</strong><br>
+      Signal:
+      <strong id="signalStatus">GREEN</strong><br>
+      Vehicles waiting:
+      <strong id="waitingCount">24</strong>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>🚑 AMBULANCE PRIORITY</h3>
+    <p style="font-size:12px;margin:0 0 8px">
+      Select the direction from which the ambulance approaches.
+    </p>
+
+    <div class="keygrid">
+      <button onclick="startEmergency('n')">1 · North</button>
+      <button onclick="startEmergency('s')">2 · South</button>
+      <button onclick="startEmergency('w')">3 · West</button>
+      <button onclick="startEmergency('e')">4 · East</button>
+    </div>
+
+    <div class="distance-card" id="distanceCard">
+      <div class="distance-heading">🚑 AMBULANCE DISTANCE</div>
+      <div id="distance" class="distance-value">—</div>
+      <div class="distance-note">Live distance countdown</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>CONTROLS</h3>
+    <button class="green" onclick="pauseSimulation()">Pause</button>
+    <button onclick="resumeSimulation()">Resume</button>
+    <button class="stop" onclick="restartSimulation()">Restart</button>
+    <button class="grey" onclick="enableVoice()">Enable / Test Voice</button>
+    <button onclick="openSpeedAdvisor()">SPEED ADVISOR ↗</button>
+  </div>
+
+  <div class="section">
+    <h3>SYSTEM MESSAGE</h3>
+    <div class="message" id="message">
+      Traffic system running normally.
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>VEHICLE TYPES</h3>
+    <div class="legend">
+      🚗 Car<br>
+      🚚 Lorry<br>
+      🚌 Bus<br>
+      🏍️ Motorbike<br>
+      🚲 Bicycle<br>
+      🚑 Ambulance
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>KEYBOARD SHORTCUTS</h3>
+    <div class="legend">
+      1 — North ambulance<br>
+      2 — South ambulance<br>
+      3 — West ambulance<br>
+      4 — East ambulance<br>
+      Space — Pause / Resume
+    </div>
+  </div>
+
+</aside>
+
+<main class="stage" id="stage">
+
+  <svg class="road-svg" viewBox="0 0 1000 1000"
+       preserveAspectRatio="xMidYMid meet">
+
+    <rect width="1000" height="1000" fill="#e8e8e2"/>
+
+    <path d="
+      M390 0 H610 V180
+      C610 300 700 390 820 390
+      H1000 V610 H820
+      C700 610 610 700 610 820
+      V1000 H390 V820
+      C390 700 300 610 180 610
+      H0 V390 H180
+      C300 390 390 300 390 180 Z"
+      fill="#595a5d"
+      stroke="#d7d7cf"
+      stroke-width="7"/>
+
+    <path d="M500 0 V365 M500 635 V1000"
+          stroke="#e5b84c" stroke-width="4"/>
+
+    <path d="M0 500 H365 M635 500 H1000"
+          stroke="#e5b84c" stroke-width="4"/>
+
+    <g stroke="#e9e9df" stroke-width="4" stroke-dasharray="30 30">
+      <path d="M450 0 V365 M550 0 V365"/>
+      <path d="M450 635 V1000 M550 635 V1000"/>
+      <path d="M0 450 H365 M0 550 H365"/>
+      <path d="M635 450 H1000 M635 550 H1000"/>
+    </g>
+
+    <g fill="#e9e9df">
+      <path d="M405 350 H595 V380 H405Z"/>
+      <path d="M405 620 H595 V650 H405Z"/>
+      <path d="M350 405 H380 V595 H350Z"/>
+      <path d="M620 405 H650 V595 H620Z"/>
+    </g>
+
+    <g stroke="#595a5d" stroke-width="7">
+      <path d="M420 350 V380 M445 350 V380 M470 350 V380
+               M495 350 V380 M520 350 V380 M545 350 V380
+               M570 350 V380"/>
+      <path d="M420 620 V650 M445 620 V650 M470 620 V650
+               M495 620 V650 M520 620 V650 M545 620 V650
+               M570 620 V650"/>
+      <path d="M350 420 H380 M350 445 H380 M350 470 H380
+               M350 495 H380 M350 520 H380 M350 545 H380
+               M350 570 H380"/>
+      <path d="M620 420 H650 M620 445 H650 M620 470 H650
+               M620 495 H650 M620 520 H650 M620 545 H650
+               M620 570 H650"/>
+    </g>
+
+    <g fill="none" stroke="#eeeeE5" stroke-width="7"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M300 425 L345 405 L335 425 M345 405 L325 405"/>
+      <path d="M700 575 L655 595 L665 575 M655 595 L675 595"/>
+      <path d="M425 700 L405 655 L425 665 M405 655 L405 675"/>
+      <path d="M575 300 L595 345 L575 335 M595 345 L595 325"/>
+    </g>
+
+    <g fill="none" stroke="#eeeeE5" stroke-width="6"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M260 425 H315 Q330 425 330 410 V400"/>
+      <path d="M740 575 H685 Q670 575 670 590 V600"/>
+      <path d="M425 740 V685 Q425 670 410 670 H400"/>
+      <path d="M575 260 V315 Q575 330 590 330 H600"/>
+    </g>
+
+  </svg>
+
+  <div class="road-label label-n">NORTH</div>
+  <div class="road-label label-s">SOUTH</div>
+  <div class="road-label label-w">WEST</div>
+  <div class="road-label label-e">EAST</div>
+
+  <div class="freeleft fl-n">FREE LEFT ↰</div>
+  <div class="freeleft fl-s">FREE LEFT ↱</div>
+  <div class="freeleft fl-w">FREE LEFT ↶</div>
+  <div class="freeleft fl-e">FREE LEFT ↷</div>
+
+  <div class="signal sig-n" id="sig-n">
+    <span class="light red on"></span>
+    <span class="light yellow"></span>
+    <span class="light green"></span>
+  </div>
+
+  <div class="signal sig-s" id="sig-s">
+    <span class="light red on"></span>
+    <span class="light yellow"></span>
+    <span class="light green"></span>
+  </div>
+
+  <div class="signal sig-w" id="sig-w">
+    <span class="light red on"></span>
+    <span class="light yellow"></span>
+    <span class="light green"></span>
+  </div>
+
+  <div class="signal sig-e" id="sig-e">
+    <span class="light red on"></span>
+    <span class="light yellow"></span>
+    <span class="light green"></span>
+  </div>
+
+  <div class="vehicle-layer" id="vehicleLayer"></div>
+
+</main>
+</div>
+
+<script>
+const directions = ["n","e","s","w"];
+
+const names = {
+  n:"North",
+  s:"South",
+  e:"East",
+  w:"West"
+};
+
+const vehicleTypes = [
+  "car","car","lorry","bus","bike","cycle"
+];
+
+let queues = {
+  n:[],s:[],e:[],w:[]
+};
+
+let currentGreen = "n";
+let emergency = false;
+let paused = false;
+let voiceEnabled = true;
+
+let emergencyTimer = null;
+let trafficTimer = null;
+let phaseTimer = null;
+let freeTimer = null;
+let emergencyEndTimer = null;
+
+let ambulanceElement = null;
+let distanceValue = 200;
+let phaseSeconds = 12;
+
+const layer = document.getElementById("vehicleLayer");
+
+/* LIVE CONNECTION TO SPEED ADVISOR */
+const speedAdvisorChannel =
+  new BroadcastChannel("smart-traffic-system");
+
+let signalStates = {
+  North:"RED",
+  South:"RED",
+  East:"RED",
+  West:"RED"
+};
+
+function publishAdvisorData(){
+  speedAdvisorChannel.postMessage({
+    signals:signalStates,
+    ambulance:emergency,
+    direction:names[currentGreen],
+    distance:emergency ? distanceValue : null
+  });
+}
+
+function openSpeedAdvisor(){
+  window.open("speed-advisor.html","speedAdvisor");
+}
+
+/* VOICE ANNOUNCEMENTS */
+function say(text){
+  if(!voiceEnabled) return;
+
+  if(!("speechSynthesis" in window)){
+    setMessage("Voice announcements are not supported by this browser.");
+    return;
+  }
+
+  speechSynthesis.cancel();
+
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.rate = 0.95;
+  speech.pitch = 1;
+  speech.volume = 1;
+
+  speechSynthesis.speak(speech);
+}
+
+function enableVoice(){
+  voiceEnabled = true;
+  say("Voice announcements are enabled. Traffic signal system is ready.");
+  setMessage("Voice announcements enabled.");
+}
+
+function setMessage(text){
+  document.getElementById("message").textContent = text;
+}
+
+/* VEHICLE CREATION */
+function createVehicle(direction,type,index){
+  const vehicle = document.createElement("div");
+
+  vehicle.className = `vehicle ${type} ${direction}`;
+  vehicle.dataset.direction = direction;
+  vehicle.dataset.type = type;
+
+  for(let i=1;i<=4;i++){
+    const wheel = document.createElement("span");
+    wheel.className = `wheel w${i}`;
+    vehicle.appendChild(wheel);
+  }
+
+  const positions = {
+    n:{left:53,top:5+index*7},
+    s:{left:43,top:91-index*7},
+    w:{left:5+index*7,top:43},
+    e:{left:91-index*7,top:53}
+  };
+
+  vehicle.style.left = positions[direction].left+"%";
+  vehicle.style.top = positions[direction].top+"%";
+
+  layer.appendChild(vehicle);
+  return vehicle;
+}
+
+function createQueues(){
+  layer.innerHTML = "";
+
+  directions.forEach(direction=>{
+    queues[direction] = [];
+
+    for(let i=0;i<6;i++){
+      const type =
+        vehicleTypes[
+          (i+directions.indexOf(direction))%
+          vehicleTypes.length
+        ];
+
+      const vehicle = createVehicle(direction,type,i);
+      queues[direction].push(vehicle);
+    }
+  });
+
+  updateWaitingCount();
+}
+
+function updateWaitingCount(){
+  const total = directions.reduce(
+    (sum,direction)=>sum+queues[direction].length,0
+  );
+
+  document.getElementById("waitingCount").textContent = total;
+}
+
+/* TRAFFIC SIGNAL CONTROL */
+function setSignal(direction,state){
+  const signal = document.getElementById("sig-"+direction);
+  const lights = signal.querySelectorAll(".light");
+
+  lights.forEach(light=>light.classList.remove("on"));
+
+  const index =
+    state==="red" ? 0 :
+    state==="yellow" ? 1 : 2;
+
+  lights[index].classList.add("on");
+
+  signalStates[names[direction]] = state.toUpperCase();
+
+  publishAdvisorData();
+}
+
+function setAllRed(){
+  directions.forEach(direction=>setSignal(direction,"red"));
+}
+
+function updateStatus(){
+  document.getElementById("greenName").textContent =
+    names[currentGreen];
+
+  document.getElementById("signalStatus").textContent =
+    emergency ? "EMERGENCY GREEN" : "GREEN";
+}
+
+function startGreen(direction){
+  emergency = false;
+  currentGreen = direction;
+
+  setAllRed();
+  setSignal(direction,"green");
+
+  updateStatus();
+
+  setMessage(
+    names[direction]+" signal is GREEN. Vehicles may proceed."
+  );
+
+  say(
+    names[direction]+" signal is green. Vehicles can move."
+  );
+
+  phaseSeconds = 12;
+  startPhaseTimer();
+}
+
+function startPhaseTimer(){
+  clearInterval(phaseTimer);
+
+  if(paused || emergency) return;
+
+  phaseTimer = setInterval(()=>{
+    if(paused || emergency) return;
+
+    phaseSeconds--;
+
+    if(phaseSeconds===2){
+      const next =
+        directions[
+          (directions.indexOf(currentGreen)+1)%4
+        ];
+
+      setSignal(currentGreen,"yellow");
+
+      setMessage(
+        names[currentGreen]+" signal is YELLOW. "+
+        names[next]+" is next."
+      );
+
+      say(
+        names[currentGreen]+" signal is yellow. "+
+        names[next]+" signal is next."
+      );
+    }
+
+    if(phaseSeconds<=0){
+      const next =
+        directions[
+          (directions.indexOf(currentGreen)+1)%4
+        ];
+
+      startGreen(next);
+    }
+
+  },1000);
+}
+
+/* NORMAL VEHICLE MOVEMENT */
+function moveOneVehicle(direction){
+  if(paused || emergency || currentGreen!==direction) return;
+  if(!queues[direction].length) return;
+
+  const vehicle = queues[direction].shift();
+
+  vehicle.classList.add("moving");
+
+  setTimeout(()=>{
+    vehicle.remove();
+
+    if(!paused && !emergency){
+      const type =
+        vehicleTypes[
+          Math.floor(Math.random()*vehicleTypes.length)
+        ];
+
+      const newVehicle = createVehicle(direction,type,5);
+      queues[direction].push(newVehicle);
+
+      updateWaitingCount();
+    }
+  },5000);
+
+  updateWaitingCount();
+}
+
+function trafficFlow(){
+  if(paused || emergency) return;
+  moveOneVehicle(currentGreen);
+}
+
+/* AMBULANCE PRIORITY */
+function startEmergency(direction){
+  if(paused) return;
+
+  clearInterval(emergencyTimer);
+  clearTimeout(emergencyEndTimer);
+
+  if(ambulanceElement){
+    ambulanceElement.remove();
+    ambulanceElement = null;
+  }
+
+  emergency = true;
+  currentGreen = direction;
+  distanceValue = 200;
+
+  setAllRed();
+  updateStatus();
+
+  document.getElementById("distanceCard").classList.add("active");
+  document.getElementById("distance").textContent = "200 METRES";
+
+  setMessage(
+    "Ambulance approaching from "+names[direction]+
+    ". All other signals are RED."
+  );
+
+  ambulanceElement = createVehicle(direction,"ambulance",0);
+
+  const startPositions = {
+    n:{left:48,top:0},
+    s:{left:48,top:92},
+    w:{left:0,top:48},
+    e:{left:92,top:48}
+  };
+
+  ambulanceElement.style.left =
+    startPositions[direction].left+"%";
+
+  ambulanceElement.style.top =
+    startPositions[direction].top+"%";
+
+  publishAdvisorData();
+
+  emergencyTimer = setInterval(()=>{
+    if(paused) return;
+
+    distanceValue -= 10;
+
+    document.getElementById("distance").textContent =
+      distanceValue+" METRES";
+
+    const progress = (200-distanceValue)/50;
+
+    const positions = {
+      n:{left:48,top:progress*30},
+      s:{left:48,top:92-progress*30},
+      w:{left:progress*30,top:48},
+      e:{left:92-progress*30,top:48}
+    };
+
+    ambulanceElement.style.left =
+      positions[direction].left+"%";
+
+    ambulanceElement.style.top =
+      positions[direction].top+"%";
+
+    publishAdvisorData();
+
+    if(distanceValue<=150){
+      clearInterval(emergencyTimer);
+
+      setSignal(direction,"green");
+      currentGreen = direction;
+      updateStatus();
+
+      document.getElementById("distance").textContent =
+        "150 METRES — PRIORITY!";
+
+      setMessage(
+        "AMBULANCE ALERT! "+names[direction]+
+        " signal is GREEN. Other directions remain RED."
+      );
+
+      say(
+        "Attention! Ambulance approaching from "+
+        names[direction]+". "+
+        names[direction]+
+        " signal is green. Other directions must stop."
+      );
+
+      emergencyEndTimer = setTimeout(()=>{
+        if(ambulanceElement){
+          ambulanceElement.remove();
+          ambulanceElement = null;
+        }
+
+        if(emergency){
+          emergency = false;
+
+          document.getElementById("distance").textContent = "—";
+          document.getElementById("distanceCard")
+            .classList.remove("active");
+
+          setMessage(
+            "Ambulance has passed. Normal traffic signals resumed."
+          );
+
+          publishAdvisorData();
+          startGreen(direction);
+        }
+      },8000);
+    }
+
+  },500);
+}
+
+/* PAUSE AND RESUME */
+function pauseSimulation(){
+  if(paused) return;
+
+  paused = true;
+  setMessage("Simulation paused.");
+}
+
+function resumeSimulation(){
+  if(!paused) return;
+
+  paused = false;
+  setMessage("Simulation resumed.");
+
+  if(!emergency){
+    startPhaseTimer();
+  }
+}
+
+/* RESTART */
+function restartSimulation(){
+  clearInterval(emergencyTimer);
+  clearInterval(phaseTimer);
+  clearInterval(trafficTimer);
+  clearInterval(freeTimer);
+  clearTimeout(emergencyEndTimer);
+
+  if(ambulanceElement){
+    ambulanceElement.remove();
+  }
+
+  ambulanceElement = null;
+  emergency = false;
+  paused = false;
+  currentGreen = "n";
+  distanceValue = 200;
+
+  document.getElementById("distance").textContent = "—";
+  document.getElementById("distanceCard")
+    .classList.remove("active");
+
+  createQueues();
+  startGreen("n");
+  startLoops();
+
+  publishAdvisorData();
+  setMessage("Simulation restarted.");
+}
+
+/* FREE-LEFT DEMONSTRATION */
+function startLoops(){
+  clearInterval(trafficTimer);
+  clearInterval(freeTimer);
+
+  trafficTimer = setInterval(trafficFlow,2200);
+
+  freeTimer = setInterval(()=>{
+    if(paused || emergency) return;
+
+    const direction =
+      directions[Math.floor(Math.random()*4)];
+
+    const queue = queues[direction];
+
+    if(!queue.length) return;
+
+    const vehicle = queue.shift();
+
+    vehicle.style.transition =
+      "transform 2s ease, left 2s ease, top 2s ease";
+
+    vehicle.style.opacity = "0.85";
+
+    const turnPositions = {
+      n:{left:"34%",top:"39%",transform:"rotate(90deg)"},
+      s:{left:"66%",top:"61%",transform:"rotate(-90deg)"},
+      w:{left:"39%",top:"34%",transform:"rotate(180deg)"},
+      e:{left:"61%",top:"66%",transform:"rotate(0deg)"}
+    };
+
+    Object.assign(vehicle.style,turnPositions[direction]);
+
+    setTimeout(()=>{
+      vehicle.remove();
+
+      if(!paused && !emergency){
+        const replacement = createVehicle(
+          direction,
+          vehicleTypes[
+            Math.floor(Math.random()*vehicleTypes.length)
+          ],
+          5
+        );
+
+        queues[direction].push(replacement);
+        updateWaitingCount();
+      }
+    },2200);
+
+    updateWaitingCount();
+
+  },9000);
+}
+
+/* KEYBOARD SHORTCUTS */
+document.addEventListener("keydown",event=>{
+  if(event.key==="1") startEmergency("n");
+  if(event.key==="2") startEmergency("s");
+  if(event.key==="3") startEmergency("w");
+  if(event.key==="4") startEmergency("e");
+
+  if(event.code==="Space"){
+    event.preventDefault();
+
+    if(paused) resumeSimulation();
+    else pauseSimulation();
+  }
+});
+
+/* SPEED ADVISOR PAGE REQUESTS CURRENT DATA */
+speedAdvisorChannel.onmessage = function(event){
+  if(event.data && event.data.requestState){
+    publishAdvisorData();
+  }
+};
+
+/* START SYSTEM */
+createQueues();
+startGreen("n");
+startLoops();
+publishAdvisorData();
+
+</script>
+</body>
+</html>
